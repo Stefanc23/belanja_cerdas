@@ -1,3 +1,5 @@
+// ignore_for_file: import_of_legacy_library_into_null_safe
+
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:html/parser.dart' as parser;
@@ -31,8 +33,8 @@ class _SearchResultState extends State<SearchResult> {
     if (response.statusCode == 200) {
       var document = parser.parse(response.body);
       try {
-        var names =
-            document.getElementsByClassName(store.productNameElementClassName);
+        var names = document
+            .getElementsByClassName(store.productNameContainerElementClassName);
         var prices =
             document.getElementsByClassName(store.productPriceElementClassName);
         var imageUrls = document.getElementsByClassName(
@@ -42,9 +44,13 @@ class _SearchResultState extends State<SearchResult> {
 
         for (int i = 0; i < imageUrls.length; ++i) {
           Product product = new Product(
-              name: names[i].text.trim(),
+              name: (store.name != 'Bukalapak'
+                  ? names[i].text.trim()
+                  : names[i].firstChild.text.trim()),
               price: prices[i].text.trim().replaceAll(' ', ''),
-              imageUrl: imageUrls[i].firstChild.attributes['src'].toString(),
+              imageUrl: (store.name != 'Bukalapak'
+                  ? imageUrls[i].firstChild.attributes['src'].toString()
+                  : imageUrls[i].attributes['src'].toString()),
               siteUrl: siteUrls[i].firstChild.attributes['href'].toString(),
               store: store);
 
@@ -131,22 +137,6 @@ class _SearchResultState extends State<SearchResult> {
                             ),
                           ),
                         ),
-                        Row(
-                          children: [
-                            IconButton(
-                                onPressed: () {},
-                                icon: Icon(
-                                  Icons.filter_alt_outlined,
-                                  color: primaryColor,
-                                )),
-                            IconButton(
-                                onPressed: () {},
-                                icon: Icon(
-                                  Icons.sort,
-                                  color: primaryColor,
-                                )),
-                          ],
-                        )
                       ],
                     )),
                 SizedBox(
@@ -159,17 +149,35 @@ class _SearchResultState extends State<SearchResult> {
                         ),
                       )
                     : Expanded(
-                        child: GridView.count(
-                            primary: false,
-                            crossAxisSpacing: 10,
-                            mainAxisSpacing: 10,
-                            crossAxisCount: 2,
-                            childAspectRatio: (1 / 2),
-                            children: productList
-                                .map(
-                                  (product) => Item(product: product),
-                                )
-                                .toList()),
+                        child: RefreshIndicator(
+                          child: GridView.count(
+                              primary: false,
+                              crossAxisSpacing: 10,
+                              mainAxisSpacing: 10,
+                              crossAxisCount: 2,
+                              childAspectRatio: (1 / 2),
+                              children: productList
+                                  .map(
+                                    (product) => Item(product: product),
+                                  )
+                                  .toList()),
+                          onRefresh: () {
+                            return Future.delayed(Duration.zero, () async {
+                              List<Product> productsFound = [];
+
+                              for (int i = 0; i < stores.length; ++i) {
+                                productsFound +=
+                                    await findProduct(stores[i], widget.query);
+                              }
+
+                              productsFound.shuffle();
+
+                              setState(() {
+                                productList = productsFound;
+                              });
+                            });
+                          },
+                        ),
                       ),
               ],
             ),
