@@ -46,12 +46,12 @@ class _SearchResultState extends State<SearchResult> {
           Product product = new Product(
               name: (store.name != 'Bukalapak'
                   ? names[i].text.trim()
-                  : names[i].firstChild.text.trim()),
+                  : names[i].firstChild!.text!.trim()),
               price: prices[i].text.trim().replaceAll(' ', ''),
               imageUrl: (store.name != 'Bukalapak'
-                  ? imageUrls[i].firstChild.attributes['src'].toString()
+                  ? imageUrls[i].firstChild!.attributes['src'].toString()
                   : imageUrls[i].attributes['src'].toString()),
-              siteUrl: siteUrls[i].firstChild.attributes['href'].toString(),
+              siteUrl: siteUrls[i].firstChild!.attributes['href'].toString(),
               store: store);
 
           productsFound.add(product);
